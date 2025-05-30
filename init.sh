@@ -3,12 +3,18 @@
 # DDoSer Complete Setup Script
 # Direct installation script - download and run
 
+# Set non-interactive mode to avoid prompts
+export DEBIAN_FRONTEND=noninteractive
+
 # Change to root directory
 cd /root
 
-# Update package lists and install required packages
-apt-get update
-apt-get install -y hping3 python3 python3-pip python3-venv python3-dev python3-setuptools python3-wheel nmap curl git python3-urllib3 iftop vnstat net-tools bmon iperf3 ifstat tcpdump mtr nginx jq
+# Update package lists and install required packages (non-interactive)
+apt-get update -qq
+apt-get install -y -qq --no-install-recommends hping3 python3 python3-pip python3-venv python3-dev python3-setuptools python3-wheel nmap curl git python3-urllib3 iftop vnstat net-tools bmon iperf3 ifstat tcpdump mtr nginx jq
+
+# Configure iperf3 to not start as daemon (prevent prompts)
+echo "iperf3 iperf3/start_daemon boolean false" | debconf-set-selections
 
 # Create attacks directory
 mkdir -p /root/attacks
